@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.VANA_APP_URL || "https://chargesignal.example"),
   title: "ChargeSignal",
   description: "Private subscription forecasts from your Gmail receipt history, powered by Vana.",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/icon.png", shortcut: "/icon.png" },
   openGraph: {
     title: "ChargeSignal — See your next charge before it lands",
     description: "Turn Gmail receipt history into a private forecast of subscriptions and renewals.",
