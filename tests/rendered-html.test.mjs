@@ -17,7 +17,7 @@ test("renders the ChargeSignal dashboard", async () => {
   assert.match(html, /<title>ChargeSignal/);
   assert.match(html, /See your next charge/);
   assert.match(html, /Subscription forecast/);
-  assert.match(html, /Connect Gmail with Vana/);
+  assert.match(html, /Connect Gmail/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|Your site is taking shape/);
 });
 
@@ -26,4 +26,3 @@ test("renders the Vana approval return page", async () => {
   assert.equal(response.status, 200);
   assert.match(await response.text(), /Approval complete/);
 });
-

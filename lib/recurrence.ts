@@ -18,6 +18,11 @@ export type SubscriptionForecast = {
   occurrences: number;
 };
 
+export type ReceiptAnalysisResult = {
+  receiptCount: number;
+  forecasts: SubscriptionForecast[];
+};
+
 const MERCHANT_HINTS: Array<[RegExp, string, string]> = [
   [/netflix/i, "Netflix", "Entertainment"],
   [/spotify/i, "Spotify", "Music"],
@@ -151,3 +156,10 @@ export function forecastSubscriptions(receipts: GmailReceipt[], now = new Date()
   return forecasts.sort((a, b) => Date.parse(a.nextCharge) - Date.parse(b.nextCharge));
 }
 
+export function analyzeVanaReceiptData(value: unknown, now = new Date()): ReceiptAnalysisResult {
+  const receipts = findGmailReceipts(value);
+  return {
+    receiptCount: receipts.length,
+    forecasts: forecastSubscriptions(receipts, now),
+  };
+}

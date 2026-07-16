@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useDirectVanaConnect } from "@opendatalabs/vana-sdk/react";
 import { demoReceipts } from "@/lib/demo-data";
-import { findGmailReceipts, forecastSubscriptions, type GmailReceipt } from "@/lib/recurrence";
+import { forecastSubscriptions, type GmailReceipt, type ReceiptAnalysisResult, type SubscriptionForecast } from "@/lib/recurrence";
 
 function jsonFetch(path: string, init?: RequestInit) {
   return fetch(path, init).then(async (response) => {
@@ -40,15 +40,17 @@ function daysUntil(date: string) {
 
 export function SubscriptionDashboard() {
   const [receipts, setReceipts] = useState<GmailReceipt[]>(demoReceipts);
+  const [liveForecasts, setLiveForecasts] = useState<SubscriptionForecast[] | null>(null);
+  const [receiptCount, setReceiptCount] = useState(demoReceipts.length);
   const [dataMode, setDataMode] = useState<"demo" | "vana">("demo");
   const connect = useDirectVanaConnect({
     createRequest: () => jsonFetch("/api/vana/request", { method: "POST" }),
     getStatus: (requestId: string) => jsonFetch(`/api/vana/status?requestId=${encodeURIComponent(requestId)}`),
     readResult: async (requestId: string) => {
-      const result = await jsonFetch(`/api/vana/data?requestId=${encodeURIComponent(requestId)}`);
-      const gmailRows = findGmailReceipts(result);
-      if (!gmailRows.length) throw new Error("No Gmail receipt rows were returned for this grant.");
-      setReceipts(gmailRows);
+      const result = await jsonFetch(`/api/vana/data?requestId=${encodeURIComponent(requestId)}`) as ReceiptAnalysisResult;
+      if (!result.receiptCount) throw new Error("No Gmail receipt rows were returned for this grant.");
+      setLiveForecasts(result.forecasts);
+      setReceiptCount(result.receiptCount);
       setDataMode("vana");
       return result;
     },
@@ -56,36 +58,40 @@ export function SubscriptionDashboard() {
     timeoutMs: 300_000,
   });
 
-  const forecasts = useMemo(() => forecastSubscriptions(receipts), [receipts]);
+  const demoForecasts = useMemo(() => forecastSubscriptions(receipts), [receipts]);
+  const forecasts = liveForecasts ?? demoForecasts;
   const monthly = forecasts.reduce((sum, item) => sum + item.amount * (item.cadence === "Annual" ? 1 / 12 : item.cadence === "Quarterly" ? 1 / 3 : item.cadence === "Weekly" ? 4.33 : 1), 0);
   const upcoming = forecasts.filter((item) => daysUntil(item.nextCharge) <= 30);
   const next = forecasts[0];
-  const stateLabel = connect.state.type === "idle" ? "Connect Gmail with Vana" : connect.state.type === "done" ? "Gmail connected" : connect.state.type === "error" ? "Try connection again" : "Waiting for approval…";
+  const stateLabel = connect.state.type === "idle" ? "Connect Gmail" : connect.state.type === "done" ? "Gmail connected" : connect.state.type === "error" ? "Try Gmail connection" : "Securely connecting…";
 
   return (
     <main>
       <nav className="nav shell">
         <a className="brand" href="#top" aria-label="ChargeSignal home"><span className="brand-mark"><Icon name="spark" /></span>ChargeSignal</a>
-        <div className="nav-meta"><span><Icon name="shield" />Private by design</span><button className="avatar" aria-label="Account">Y</button></div>
+        <div className="nav-meta"><span><Icon name="shield" />Private receipt analysis</span><span className="nav-badge">Powered by Vana</span></div>
       </nav>
 
       <section id="top" className="hero shell">
+        <div className="lamp lamp-left" aria-hidden="true"><i></i></div>
+        <div className="lamp lamp-right" aria-hidden="true"><i></i></div>
         <div className="hero-copy">
-          <div className="eyebrow"><span></span> Gmail intelligence, powered by Vana</div>
-          <h1>See your next charge<br /><em>before it lands.</em></h1>
-          <p>ChargeSignal turns receipt history into a clear forecast of subscriptions, renewals, and upcoming spend—without selling your inbox.</p>
+          <div className="eyebrow"><span></span> Your subscription co-pilot</div>
+          <h1>Know what’s<br /><em>charging next.</em></h1>
+          <p>Connect Gmail once. ChargeSignal securely finds receipts and recurring payments, understands their context, and forecasts what is likely to charge again.</p>
           <div className="hero-actions">
             <button className="primary" onClick={() => connect.start()} disabled={!(["idle", "error"].includes(connect.state.type))}>
               <span className="gmail-dot">M</span>{stateLabel}<Icon name="arrow" />
             </button>
-            <button className="text-button" onClick={() => { setReceipts(demoReceipts); setDataMode("demo"); }}>Explore demo</button>
+            <button className="text-button" onClick={() => { setReceipts(demoReceipts); setLiveForecasts(null); setReceiptCount(demoReceipts.length); setDataMode("demo"); }}>Explore demo</button>
           </div>
           {connect.state.type === "error" ? <p className="connect-error" role="alert">{connect.state.error.message}</p> : null}
-          <div className="trust-row"><span><Icon name="check" />Only receipt data</span><span><Icon name="check" />You approve access</span><span><Icon name="check" />Revoke anytime</span></div>
+          <div className="trust-row"><span><Icon name="check" />Read-only receipt access</span><span><Icon name="check" />Backend analysis</span><span><Icon name="check" />Revoke anytime</span></div>
         </div>
         <div className="signal-card" aria-label="Next predicted charge">
-          <div className="signal-top"><span>Next charge signal</span><span className="live-dot">Live forecast</span></div>
+          <div className="signal-top"><span>Charge forecast</span><span className="live-dot">Context analyzed</span></div>
           {next ? <>
+            <div className="receipt-ribbon"><Icon name="receipt" /> Smart receipt scan</div>
             <div className="merchant-orbit"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><span>{next.merchant.slice(0, 1)}</span></div>
             <div className="signal-merchant">{next.merchant}</div>
             <div className="signal-price">{money(next.amount, next.currency)}</div>
@@ -102,7 +108,7 @@ export function SubscriptionDashboard() {
         </div>
         <div className="stats-grid">
           <article className="stat"><div className="stat-icon mint"><Icon name="wallet" /></div><div><span>Estimated monthly</span><strong>{money(monthly, "USD")}</strong><small>Across recurring charges</small></div></article>
-          <article className="stat"><div className="stat-icon peach"><Icon name="receipt" /></div><div><span>Subscriptions found</span><strong>{forecasts.length}</strong><small>From {receipts.length} receipt emails</small></div></article>
+          <article className="stat"><div className="stat-icon peach"><Icon name="receipt" /></div><div><span>Subscriptions found</span><strong>{forecasts.length}</strong><small>From {receiptCount} receipt emails</small></div></article>
           <article className="stat"><div className="stat-icon yellow"><Icon name="calendar" /></div><div><span>Due in 30 days</span><strong>{upcoming.length}</strong><small>{money(upcoming.reduce((sum, item) => sum + item.amount, 0), "USD")} projected</small></div></article>
         </div>
 
@@ -124,7 +130,7 @@ export function SubscriptionDashboard() {
             <span className="insight-icon"><Icon name="spark" /></span>
             <span className="kicker">Signal insight</span>
             <h3>Your subscriptions look steady.</h3>
-            <p>We found {forecasts.length} repeating patterns. Forecasts use charge timing and amount consistency—not the body of your personal email.</p>
+            <p>We found {forecasts.length} repeating patterns. Forecasts use charge timing, merchant context, and amount consistency—not unrelated personal email.</p>
             <div className="privacy-note"><Icon name="shield" /><span><b>Your inbox stays yours.</b> Access is scoped to the Gmail receipts dataset you approve through Vana.</span></div>
           </aside>
         </div>
@@ -133,14 +139,13 @@ export function SubscriptionDashboard() {
       <section className="how shell">
         <span className="kicker">How it works</span><h2>From receipts to foresight.</h2>
         <div className="steps">
-          <article><span>01</span><div className="step-icon"><Icon name="shield" /></div><h3>You approve access</h3><p>Vana asks you to approve the exact Gmail receipt scope. Nothing broader.</p></article>
-          <article><span>02</span><div className="step-icon"><Icon name="receipt" /></div><h3>We spot recurrence</h3><p>Matching merchant, amount, and timing reveal reliable subscription patterns.</p></article>
+          <article><span>01</span><div className="step-icon"><Icon name="shield" /></div><h3>Connect Gmail</h3><p>One secure flow requests only the receipt data needed. Vana handles the approval layer underneath.</p></article>
+          <article><span>02</span><div className="step-icon"><Icon name="receipt" /></div><h3>We read the context</h3><p>Merchant, amount, receipt language, and timing reveal recurring payment patterns.</p></article>
           <article><span>03</span><div className="step-icon"><Icon name="calendar" /></div><h3>You get the signal</h3><p>See likely dates and amounts before the next charge reaches your card.</p></article>
         </div>
       </section>
 
-      <footer className="shell"><a className="brand" href="#top"><span className="brand-mark"><Icon name="spark" /></span>ChargeSignal</a><p>Built on Vana · Your data, your control.</p><span>Forecasts are estimates, not billing guarantees.</span></footer>
+      <footer className="shell"><a className="brand" href="#top"><span className="brand-mark"><Icon name="spark" /></span>ChargeSignal</a><p>Vana-secured · Your data, your control.</p><span>Forecasts are estimates, not billing guarantees.</span></footer>
     </main>
   );
 }
-
