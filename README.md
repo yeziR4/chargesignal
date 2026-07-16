@@ -31,6 +31,7 @@ Create a Docker Space and configure:
 - Variable: `VANA_NETWORK=moksha`
 
 The container exposes port `7860`. Users see one **Connect Gmail** action; Vana remains the approval and Personal Server access layer behind that flow.
+The Space starts in demo mode before a Vana key is configured, so its public URL and icon can be used to create the app identity first.
 
 ## Local development
 
