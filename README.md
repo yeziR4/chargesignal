@@ -1,13 +1,3 @@
----
-title: ChargeSignal
-emoji: 🧾
-colorFrom: orange
-colorTo: yellow
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # ChargeSignal
 
 ChargeSignal is a Vana-powered subscription forecast dashboard. It reads the user-approved `gmail.receipts` scope, recognizes recurring charges, and predicts the likely next date and amount.
@@ -22,16 +12,15 @@ ChargeSignal is a Vana-powered subscription forecast dashboard. It reads the use
 - Includes a demo dataset so the product can be reviewed before live credentials and the Gmail connector scope are available.
 - Performs live Gmail normalization and recurrence analysis on the backend; the browser receives only forecast results and a receipt count.
 
-## Hugging Face Space
+## Railway deployment
 
-Create a Docker Space and configure:
+Create a Railway service from this repository. Railway detects the root `Dockerfile` and supplies `PORT` automatically. Configure:
 
-- Secret: `VANA_APP_PRIVATE_KEY`
-- Variable: `VANA_APP_URL=https://<owner>-chargesignal.hf.space`
-- Variable: `VANA_NETWORK=moksha`
+- `VANA_APP_PRIVATE_KEY=0x...` as a secret
+- `VANA_APP_URL=https://<your-service>.up.railway.app`
+- `VANA_NETWORK=moksha`
 
-The container exposes port `7860`. Users see one **Connect Gmail** action; Vana remains the approval and Personal Server access layer behind that flow.
-The Space starts in demo mode before a Vana key is configured, so its public URL and icon can be used to create the app identity first.
+The container honors Railway's assigned `PORT`. It starts in demo mode before a Vana key is configured, allowing the public Railway URL and `/icon.png` to be used when creating the Vana app identity.
 
 ## Local development
 
