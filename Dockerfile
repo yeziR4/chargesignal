@@ -12,14 +12,12 @@ ENV NODE_ENV=production \
     WRANGLER_SEND_METRICS=false \
     WRANGLER_LOG_PATH=/tmp/wrangler.log
 
-RUN useradd --create-home --uid 1000 user
-WORKDIR /home/user/app
-COPY --from=build --chown=user:user /app/node_modules ./node_modules
-COPY --from=build --chown=user:user /app/dist ./dist
-COPY --chown=user:user docker-entrypoint.sh ./docker-entrypoint.sh
+WORKDIR /home/node/app
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-USER user
+USER node
 EXPOSE 7860
 CMD ["./docker-entrypoint.sh"]
-
