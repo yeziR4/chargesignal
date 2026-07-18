@@ -14,13 +14,13 @@ ChargeSignal is a Vana-powered subscription forecast dashboard. It reads the use
 
 ## Railway deployment
 
-Create a Railway service from this repository. Railway detects the root `Dockerfile` and supplies `PORT` automatically. Configure:
+Create a Railway service from this repository. Railway detects the root `Dockerfile`, runs the native Node standalone server, and supplies `PORT` automatically. Configure:
 
 - `VANA_APP_PRIVATE_KEY=0x...` as a secret
 - `VANA_APP_URL=https://<your-service>.up.railway.app`
 - `VANA_NETWORK=moksha`
 
-The container honors Railway's assigned `PORT`. It starts in demo mode before a Vana key is configured, allowing the public Railway URL and `/icon.png` to be used when creating the Vana app identity.
+The native Node server honors Railway's assigned `PORT`. It starts in demo mode before a Vana key is configured, allowing the public Railway URL and `/icon.png` to be used when creating the Vana app identity.
 
 ## Local development
 
