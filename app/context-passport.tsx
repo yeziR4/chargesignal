@@ -64,7 +64,12 @@ function SourceConnector({ source, connected, onResult }: {
       <span className="source-name"><b>{detail.name}</b><i>{detail.note}</i></span>
       <small>{detail.description}</small>
     </span>
-    <button onClick={() => connect.start()} disabled={busy || connected}>
+    <button
+      id={`${source}-connect-button`}
+      type="button"
+      onClick={() => connect.start()}
+      disabled={busy || connected}
+    >
       {connected ? <Icon name="check" /> : null}{label}
     </button>
     {connect.state.type === "error" ? <small className="source-error">{connect.state.error.message}</small> : null}
@@ -139,7 +144,13 @@ export function ContextPassportApp() {
         <h1>Your AI history<br /><em>already knows you.</em></h1>
         <p>Turn the conversations you choose from ChatGPT and Claude into a private, portable guide to your goals, working style, and best ways to collaborate.</p>
         <div className="hero-actions">
-          <a className="primary" href="#connect"><Icon name="spark" />Build my passport<Icon name="arrow" /></a>
+          <button
+            className="primary"
+            type="button"
+            onClick={() => document.getElementById("chatgpt-connect-button")?.click()}
+          >
+            <Icon name="spark" />Build my passport<Icon name="arrow" />
+          </button>
           <a className="text-button" href="#passport-title">Explore demo</a>
         </div>
         <div className="trust-row"><span><Icon name="check" />One Vana approval flow</span><span><Icon name="check" />No raw chats in your browser</span><span><Icon name="check" />Revoke anytime</span></div>

@@ -20,6 +20,8 @@ test("renders the Context Passport experience", async () => {
   assert.match(html, /Choose your history/);
   assert.match(html, /ChatGPT/);
   assert.match(html, /Claude/);
+  assert.match(html, /id="chatgpt-connect-button"/);
+  assert.match(html, /<button[^>]*>.*Build my passport/s);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|Your site is taking shape/);
 });
 
