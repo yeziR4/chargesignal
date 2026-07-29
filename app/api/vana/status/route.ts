@@ -1,11 +1,11 @@
-import { getVanaController, parseCommerceSource } from "@/lib/vana";
+import { getVanaController, parseAiSource } from "@/lib/vana";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestId = url.searchParams.get("requestId");
-  const source = parseCommerceSource(url.searchParams.get("source"));
+  const source = parseAiSource(url.searchParams.get("source"));
   if (!requestId) return Response.json({ error: "Missing requestId" }, { status: 400 });
-  if (!source) return Response.json({ error: "Choose a supported data source." }, { status: 400 });
+  if (!source) return Response.json({ error: "Choose ChatGPT or Claude." }, { status: 400 });
   try {
     return Response.json(await getVanaController(source).getAccessRequestStatus(requestId));
   } catch (error) {

@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.VANA_APP_URL || "https://chargesignal.example"),
-  title: "ChargeSignal",
-  description: "Private spending forecasts from your Amazon, Shop, and Uber history, powered by Vana.",
+  title: "Context Passport",
+  description: "A private, portable collaboration profile built from user-approved AI history through Vana.",
   icons: { icon: "/icon.png", shortcut: "/icon.png" },
   openGraph: {
-    title: "ChargeSignal — Know what you’ll spend next",
-    description: "Turn user-approved commerce history into private repeat-purchase and spending signals.",
+    title: "Context Passport — Make your AI history portable",
+    description: "Turn user-approved ChatGPT and Claude history into a portable guide to how you think and work.",
   },
 };
 

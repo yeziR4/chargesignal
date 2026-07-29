@@ -1,16 +1,15 @@
-# ChargeSignal
+# Context Passport
 
-ChargeSignal is a Vana-powered commerce forecast dashboard. It privately analyzes user-approved Amazon, Shop, and Uber history to identify repeat purchases and likely future spending.
+Context Passport is a Vana-powered personal context app. It transforms user-approved ChatGPT and Claude history into a private, portable collaboration manual: recurring focus areas, working-style signals, and practical instructions for helping the user well.
 
-## What it does
+## Product flow
 
-- Connects through Vana Direct Data Access.
-- Offers three independently approved commerce sources: `amazon.orders`, `shop.orders`, and `uber.trips` + `uber.receipts`.
-- Normalizes order and trip records from approved Vana responses.
-- Groups matching merchants and items, calculates a median repeat interval, and assigns confidence from history depth.
-- Caches an approved read by request ID so repeat UI requests do not trigger another paid Personal Server read.
-- Includes a demo dataset so the product can be reviewed before live credentials and the Gmail connector scope are available.
-- Performs live normalization and recurrence analysis on the backend; the browser receives only aggregate forecasts and record counts.
+1. The user starts with ChatGPT and approves access through Vana.
+2. The backend reads `chatgpt.conversations` and `chatgpt.memories`, then derives a Context Passport.
+3. The user can optionally add Claude for a broader view using `claude.conversations` and `claude.projects`.
+4. Only aggregate signals are returned to the browser. Raw conversations are not included in the client response.
+
+The app has a demo passport so visitors can understand the outcome before connecting data. Vana owns the authentication and data-approval flow; the app never receives ChatGPT or Claude passwords.
 
 ## Railway deployment
 
@@ -20,7 +19,7 @@ Create a Railway service from this repository. Railway detects the root `Dockerf
 - `VANA_APP_URL=https://<your-service>.up.railway.app`
 - `VANA_NETWORK=mainnet`
 
-The native Node server honors Railway's assigned `PORT`. It starts in demo mode before a Vana key is configured, allowing the public Railway URL and `/icon.png` to be used when creating the Vana app identity.
+The native Node server honors Railway's assigned `PORT`. The public URL and `/icon.png` can be used for the Vana app listing.
 
 ## Local development
 
@@ -29,20 +28,13 @@ npm install
 npm run dev
 ```
 
-## Live Vana configuration
+## Mainnet readiness
 
-Configure these server-side environment variables:
-
-```text
-VANA_APP_PRIVATE_KEY=0x...
-VANA_APP_URL=https://your-deployed-url
-VANA_NETWORK=mainnet
-```
-
-Use Moksha only for development. Vana Cup activity counts only on mainnet, which requires a mainnet app identity and funded USDC.e escrow.
+The Vana app identity must be registered for the exact `VANA_APP_URL`, and its protocol escrow must contain USDC.e before Personal Server reads can succeed. Use Moksha only for development; Builder League activity is measured on mainnet.
 
 ## Verification
 
 ```bash
+npm run lint
 npm test
 ```

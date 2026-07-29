@@ -1,16 +1,15 @@
 import { createDirectDataController } from "@opendatalabs/vana-sdk/server";
 
-export const commerceSources = {
-  amazon: ["amazon.orders"],
-  shop: ["shop.orders"],
-  uber: ["uber.trips", "uber.receipts"],
+export const aiSources = {
+  chatgpt: ["chatgpt.conversations", "chatgpt.memories"],
+  claude: ["claude.conversations", "claude.projects"],
 } as const;
 
-export type CommerceSource = keyof typeof commerceSources;
+export type AiSource = keyof typeof aiSources;
 
-export function parseCommerceSource(value: unknown): CommerceSource | null {
-  return typeof value === "string" && value in commerceSources
-    ? value as CommerceSource
+export function parseAiSource(value: unknown): AiSource | null {
+  return typeof value === "string" && value in aiSources
+    ? value as AiSource
     : null;
 }
 
@@ -20,7 +19,7 @@ export function getVanaAppUrl() {
   return value;
 }
 
-export function getVanaController(source: CommerceSource) {
+export function getVanaController(source: AiSource) {
   const appPrivateKey = process.env.VANA_APP_PRIVATE_KEY;
   const homepageUrl = getVanaAppUrl();
   const network = process.env.VANA_NETWORK;
@@ -32,11 +31,11 @@ export function getVanaController(source: CommerceSource) {
     network: network as "mainnet" | "moksha",
     appPrivateKey: appPrivateKey as `0x${string}`,
     app: {
-      id: "charge-signal",
-      name: "ChargeSignal",
+      id: "context-passport",
+      name: "Context Passport",
       homepageUrl,
     },
     source,
-    scopes: [...commerceSources[source]],
+    scopes: [...aiSources[source]],
   });
 }

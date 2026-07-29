@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { SubscriptionDashboard } from "./subscription-dashboard";
+import { ContextPassportApp } from "./context-passport";
 
 export const metadata: Metadata = {
-  title: "ChargeSignal — Know what you’ll spend next",
-  description: "A private repeat-purchase and spending forecast powered by your user-approved Vana data.",
+  title: "Context Passport — Make your AI history portable",
+  description: "A private collaboration profile built from the ChatGPT and Claude history you approve through Vana.",
 };
 
 export default function Home() {
-  return <SubscriptionDashboard />;
+  return <ContextPassportApp />;
 }

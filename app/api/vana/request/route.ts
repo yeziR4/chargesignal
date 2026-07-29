@@ -1,9 +1,9 @@
-import { getVanaAppUrl, getVanaController, parseCommerceSource } from "@/lib/vana";
+import { getVanaAppUrl, getVanaController, parseAiSource } from "@/lib/vana";
 
 export async function POST(request: Request) {
   try {
-    const source = parseCommerceSource((await request.json())?.source);
-    if (!source) return Response.json({ error: "Choose a supported data source." }, { status: 400 });
+    const source = parseAiSource((await request.json())?.source);
+    if (!source) return Response.json({ error: "Choose ChatGPT or Claude." }, { status: 400 });
     const accessRequest = await getVanaController(source).createAccessRequest({
       returnUrl: `${getVanaAppUrl()}/connect/return?source=${source}`,
     });

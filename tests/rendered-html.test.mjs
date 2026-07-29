@@ -10,17 +10,16 @@ async function render(path = "/") {
   }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-test("renders the ChargeSignal dashboard", async () => {
+test("renders the Context Passport experience", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /<title>ChargeSignal/);
-  assert.match(html, /Know what you/);
-  assert.match(html, /Spending forecast/);
-  assert.match(html, /Connect what you use/);
-  assert.match(html, /Amazon/);
-  assert.match(html, /Shop/);
-  assert.match(html, /Uber/);
+  assert.match(html, /<title>Context Passport/);
+  assert.match(html, /Your AI history/);
+  assert.match(html, /Context Passport/);
+  assert.match(html, /Choose your history/);
+  assert.match(html, /ChatGPT/);
+  assert.match(html, /Claude/);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|Your site is taking shape/);
 });
 
