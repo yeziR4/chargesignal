@@ -14,11 +14,17 @@ export function parseCommerceSource(value: unknown): CommerceSource | null {
     : null;
 }
 
+export function getVanaAppUrl() {
+  const value = process.env.VANA_APP_URL?.trim().replace(/\/+$/, "");
+  if (!value) throw new Error("VANA_APP_URL is not configured.");
+  return value;
+}
+
 export function getVanaController(source: CommerceSource) {
   const appPrivateKey = process.env.VANA_APP_PRIVATE_KEY;
-  const homepageUrl = process.env.VANA_APP_URL;
+  const homepageUrl = getVanaAppUrl();
   const network = process.env.VANA_NETWORK;
-  if (!appPrivateKey || !homepageUrl || !["mainnet", "moksha"].includes(network ?? "")) {
+  if (!appPrivateKey || !["mainnet", "moksha"].includes(network ?? "")) {
     throw new Error("Live Vana mode is not configured. Set VANA_APP_PRIVATE_KEY, VANA_APP_URL, and VANA_NETWORK.");
   }
   return createDirectDataController({
