@@ -4,11 +4,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.VANA_APP_URL || "https://chargesignal.example"),
   title: "ChargeSignal",
-  description: "Private subscription forecasts from your Gmail receipt history, powered by Vana.",
+  description: "Private spending forecasts from your Amazon, Shop, and Uber history, powered by Vana.",
   icons: { icon: "/icon.png", shortcut: "/icon.png" },
   openGraph: {
-    title: "ChargeSignal — See your next charge before it lands",
-    description: "Turn Gmail receipt history into a private forecast of subscriptions and renewals.",
+    title: "ChargeSignal — Know what you’ll spend next",
+    description: "Turn user-approved commerce history into private repeat-purchase and spending signals.",
   },
 };
 

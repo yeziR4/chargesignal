@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import { SubscriptionDashboard } from "./subscription-dashboard";
 
 export const metadata: Metadata = {
-  title: "ChargeSignal — See your next charge before it lands",
-  description: "A private subscription and receipt forecast powered by your Vana data.",
+  title: "ChargeSignal — Know what you’ll spend next",
+  description: "A private repeat-purchase and spending forecast powered by your user-approved Vana data.",
 };
 
 export default function Home() {
   return <SubscriptionDashboard />;
 }
-

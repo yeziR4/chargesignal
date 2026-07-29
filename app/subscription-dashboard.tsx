@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useDirectVanaConnect } from "@opendatalabs/vana-sdk/react";
+import type { CommerceAnalysisResult } from "@/lib/commerce";
 import { demoReceipts } from "@/lib/demo-data";
-import { forecastSubscriptions, type GmailReceipt, type ReceiptAnalysisResult, type SubscriptionForecast } from "@/lib/recurrence";
+import { forecastSubscriptions, type SubscriptionForecast } from "@/lib/recurrence";
+import type { CommerceSource } from "@/lib/vana";
 
 function jsonFetch(path: string, init?: RequestInit) {
   return fetch(path, init).then(async (response) => {
@@ -26,8 +28,58 @@ function Icon({ name }: { name: "spark" | "shield" | "calendar" | "receipt" | "w
   return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
 }
 
+const sourceDetails: Record<CommerceSource, { name: string; mark: string; description: string }> = {
+  amazon: { name: "Amazon", mark: "a", description: "Orders and repeat buys" },
+  shop: { name: "Shop", mark: "S", description: "Merchant order history" },
+  uber: { name: "Uber", mark: "U", description: "Trips and ride receipts" },
+};
+
+function SourceConnector({ source, connected, onResult }: {
+  source: CommerceSource;
+  connected: boolean;
+  onResult: (result: CommerceAnalysisResult) => void;
+}) {
+  const detail = sourceDetails[source];
+  const connect = useDirectVanaConnect({
+    createRequest: () => jsonFetch("/api/vana/request", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ source }),
+    }),
+    getStatus: (requestId: string) => jsonFetch(`/api/vana/status?source=${source}&requestId=${encodeURIComponent(requestId)}`),
+    readResult: async (requestId: string) => {
+      const result = await jsonFetch(`/api/vana/data?source=${source}&requestId=${encodeURIComponent(requestId)}`) as CommerceAnalysisResult;
+      onResult(result);
+      return result;
+    },
+    pollIntervalMs: 1800,
+    timeoutMs: 300_000,
+  });
+  const busy = !["idle", "error", "done"].includes(connect.state.type);
+  const label = connected || connect.state.type === "done"
+    ? "Connected"
+    : connect.state.type === "error"
+      ? "Try again"
+      : busy
+        ? "Connecting…"
+        : "Connect";
+
+  return <div className={`source-row ${connected ? "connected" : ""}`}>
+    <span className={`source-mark ${source}`}>{detail.mark}</span>
+    <span className="source-copy"><b>{detail.name}</b><small>{detail.description}</small></span>
+    <button onClick={() => connect.start()} disabled={busy || connected}>
+      {connected ? <Icon name="check" /> : null}{label}
+    </button>
+    {connect.state.type === "error" ? <small className="source-error">{connect.state.error.message}</small> : null}
+  </div>;
+}
+
 function money(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+  } catch {
+    return `${currency} ${amount.toFixed(2)}`;
+  }
 }
 
 function shortDate(date: string) {
@@ -39,109 +91,91 @@ function daysUntil(date: string) {
 }
 
 export function SubscriptionDashboard() {
-  const [receipts, setReceipts] = useState<GmailReceipt[]>(demoReceipts);
-  const [liveForecasts, setLiveForecasts] = useState<SubscriptionForecast[] | null>(null);
-  const [receiptCount, setReceiptCount] = useState(demoReceipts.length);
-  const [dataMode, setDataMode] = useState<"demo" | "vana">("demo");
-  const connect = useDirectVanaConnect({
-    createRequest: () => jsonFetch("/api/vana/request", { method: "POST" }),
-    getStatus: (requestId: string) => jsonFetch(`/api/vana/status?requestId=${encodeURIComponent(requestId)}`),
-    readResult: async (requestId: string) => {
-      const result = await jsonFetch(`/api/vana/data?requestId=${encodeURIComponent(requestId)}`) as ReceiptAnalysisResult;
-      if (!result.receiptCount) throw new Error("No Gmail receipt rows were returned for this grant.");
-      setLiveForecasts(result.forecasts);
-      setReceiptCount(result.receiptCount);
-      setDataMode("vana");
-      return result;
-    },
-    pollIntervalMs: 1800,
-    timeoutMs: 300_000,
-  });
-
-  const demoForecasts = useMemo(() => forecastSubscriptions(receipts), [receipts]);
-  const forecasts = liveForecasts ?? demoForecasts;
+  const [results, setResults] = useState<Partial<Record<CommerceSource, CommerceAnalysisResult>>>({});
+  const demoForecasts = useMemo(() => forecastSubscriptions(demoReceipts), []);
+  const liveForecasts = Object.values(results).flatMap((result) => result?.forecasts ?? []);
+  const forecasts = liveForecasts.length || Object.keys(results).length ? liveForecasts : demoForecasts;
+  const connectedSources = Object.keys(results).length;
+  const recordCount = Object.values(results).reduce((sum, result) => sum + (result?.recordCount ?? 0), 0);
   const monthly = forecasts.reduce((sum, item) => sum + item.amount * (item.cadence === "Annual" ? 1 / 12 : item.cadence === "Quarterly" ? 1 / 3 : item.cadence === "Weekly" ? 4.33 : 1), 0);
   const upcoming = forecasts.filter((item) => daysUntil(item.nextCharge) <= 30);
-  const next = forecasts[0];
-  const stateLabel = connect.state.type === "idle" ? "Connect Gmail" : connect.state.type === "done" ? "Gmail connected" : connect.state.type === "error" ? "Try Gmail connection" : "Securely connecting…";
+  const dataMode = connectedSources ? "vana" : "demo";
+  const saveResult = (result: CommerceAnalysisResult) => setResults((current) => ({ ...current, [result.source]: result }));
 
   return (
     <main>
       <nav className="nav shell">
         <a className="brand" href="#top" aria-label="ChargeSignal home"><span className="brand-mark"><Icon name="spark" /></span>ChargeSignal</a>
-        <div className="nav-meta"><span><Icon name="shield" />Private receipt analysis</span><span className="nav-badge">Powered by Vana</span></div>
+        <div className="nav-meta"><span><Icon name="shield" />Private spending analysis</span><span className="nav-badge">Powered by Vana</span></div>
       </nav>
 
       <section id="top" className="hero shell">
         <div className="lamp lamp-left" aria-hidden="true"><i></i></div>
         <div className="lamp lamp-right" aria-hidden="true"><i></i></div>
         <div className="hero-copy">
-          <div className="eyebrow"><span></span> Your subscription co-pilot</div>
-          <h1>Know what’s<br /><em>charging next.</em></h1>
-          <p>Connect Gmail once. ChargeSignal securely finds receipts and recurring payments, understands their context, and forecasts what is likely to charge again.</p>
+          <div className="eyebrow"><span></span> Your spending co-pilot</div>
+          <h1>Know what you’ll<br /><em>spend next.</em></h1>
+          <p>Bring your Amazon, Shop, and Uber history together. ChargeSignal privately finds repeat purchases, spending patterns, and the charges most likely to return.</p>
           <div className="hero-actions">
-            <button className="primary" onClick={() => connect.start()} disabled={!(["idle", "error"].includes(connect.state.type))}>
-              <span className="gmail-dot">M</span>{stateLabel}<Icon name="arrow" />
-            </button>
-            <button className="text-button" onClick={() => { setReceipts(demoReceipts); setLiveForecasts(null); setReceiptCount(demoReceipts.length); setDataMode("demo"); }}>Explore demo</button>
+            <a className="primary" href="#connect"><Icon name="spark" />Build my signal<Icon name="arrow" /></a>
+            <a className="text-button" href="#dashboard-title">Explore demo</a>
           </div>
-          {connect.state.type === "error" ? <p className="connect-error" role="alert">{connect.state.error.message}</p> : null}
-          <div className="trust-row"><span><Icon name="check" />Read-only receipt access</span><span><Icon name="check" />Backend analysis</span><span><Icon name="check" />Revoke anytime</span></div>
+          <div className="trust-row"><span><Icon name="check" />User-approved data</span><span><Icon name="check" />Backend analysis</span><span><Icon name="check" />Revoke anytime</span></div>
         </div>
-        <div className="signal-card" aria-label="Next predicted charge">
-          <div className="signal-top"><span>Charge forecast</span><span className="live-dot">Context analyzed</span></div>
-          {next ? <>
-            <div className="receipt-ribbon"><Icon name="receipt" /> Smart receipt scan</div>
-            <div className="merchant-orbit"><div className="orbit orbit-one"></div><div className="orbit orbit-two"></div><span>{next.merchant.slice(0, 1)}</span></div>
-            <div className="signal-merchant">{next.merchant}</div>
-            <div className="signal-price">{money(next.amount, next.currency)}</div>
-            <div className="signal-date"><Icon name="calendar" />Expected {shortDate(next.nextCharge)} · {daysUntil(next.nextCharge)} days</div>
-            <div className="confidence"><div><span style={{ width: `${next.confidence}%` }}></span></div><b>{next.confidence}% confidence</b></div>
-          </> : <div className="empty-forecast">Connect a receipt history with at least two matching charges to generate a forecast.</div>}
+
+        <div className="signal-card source-card" id="connect" aria-label="Connect spending data">
+          <div className="signal-top"><span>Your data lineup</span><span className="live-dot">{connectedSources}/3 live</span></div>
+          <div className="connect-heading"><span className="receipt-ribbon"><Icon name="shield" /> Vana-secured</span><h2>Connect what you use</h2><p>Every source adds a sharper spending signal.</p></div>
+          <div className="source-list">
+            {(["amazon", "shop", "uber"] as CommerceSource[]).map((source) =>
+              <SourceConnector key={source} source={source} connected={Boolean(results[source])} onResult={saveResult} />,
+            )}
+          </div>
+          <small className="connect-footnote">You approve each source separately. ChargeSignal never receives your login credentials.</small>
         </div>
       </section>
 
       <section className="dashboard shell" aria-labelledby="dashboard-title">
         <div className="section-heading">
-          <div><span className="kicker">Your money map</span><h2 id="dashboard-title">Subscription forecast</h2></div>
-          <span className={`mode-pill ${dataMode}`}><i></i>{dataMode === "demo" ? "Demo data" : "Vana data"}</span>
+          <div><span className="kicker">Your money map</span><h2 id="dashboard-title">Spending forecast</h2></div>
+          <span className={`mode-pill ${dataMode}`}><i></i>{dataMode === "demo" ? "Demo preview" : `${connectedSources} source${connectedSources === 1 ? "" : "s"} live`}</span>
         </div>
         <div className="stats-grid">
-          <article className="stat"><div className="stat-icon mint"><Icon name="wallet" /></div><div><span>Estimated monthly</span><strong>{money(monthly, "USD")}</strong><small>Across recurring charges</small></div></article>
-          <article className="stat"><div className="stat-icon peach"><Icon name="receipt" /></div><div><span>Subscriptions found</span><strong>{forecasts.length}</strong><small>From {receiptCount} receipt emails</small></div></article>
-          <article className="stat"><div className="stat-icon yellow"><Icon name="calendar" /></div><div><span>Due in 30 days</span><strong>{upcoming.length}</strong><small>{money(upcoming.reduce((sum, item) => sum + item.amount, 0), "USD")} projected</small></div></article>
+          <article className="stat"><div className="stat-icon mint"><Icon name="wallet" /></div><div><span>Estimated recurring</span><strong>{money(monthly, forecasts[0]?.currency ?? "USD")}</strong><small>per month</small></div></article>
+          <article className="stat"><div className="stat-icon peach"><Icon name="receipt" /></div><div><span>Data sources</span><strong>{connectedSources || 3}</strong><small>{connectedSources ? "securely connected" : "available to connect"}</small></div></article>
+          <article className="stat"><div className="stat-icon yellow"><Icon name="calendar" /></div><div><span>Records analyzed</span><strong>{connectedSources ? recordCount : demoReceipts.length}</strong><small>private commerce events</small></div></article>
         </div>
 
         <div className="content-grid">
           <section className="panel upcoming-panel">
-            <div className="panel-head"><div><span>Next 30 days</span><h3>Upcoming charges</h3></div><span className="count">{upcoming.length} expected</span></div>
+            <div className="panel-head"><div><span>Next 30 days</span><h3>Likely repeat spend</h3></div><span className="count">{upcoming.length} signals</span></div>
             <div className="charge-list">
-              {upcoming.map((item, index) => <article className="charge" key={`${item.merchant}-${item.nextCharge}`}>
+              {upcoming.map((item: SubscriptionForecast, index) => <article className="charge" key={`${item.merchant}-${item.nextCharge}`}>
                 <div className={`merchant-logo logo-${index % 4}`}>{item.merchant.slice(0, 1)}</div>
                 <div className="charge-main"><strong>{item.merchant}</strong><span>{item.category} · {item.cadence}</span></div>
                 <div className="charge-when"><strong>{shortDate(item.nextCharge)}</strong><span>in {daysUntil(item.nextCharge)} days</span></div>
                 <div className="charge-price">{money(item.amount, item.currency)}</div>
               </article>)}
-              {!upcoming.length ? <div className="empty-list">No reliable charges are predicted in the next 30 days.</div> : null}
+              {!upcoming.length ? <div className="empty-list">Your data is connected. Add another source or build more history to reveal reliable repeat-spend signals.</div> : null}
             </div>
           </section>
 
           <aside className="panel insight-panel">
             <span className="insight-icon"><Icon name="spark" /></span>
             <span className="kicker">Signal insight</span>
-            <h3>Your subscriptions look steady.</h3>
-            <p>We found {forecasts.length} repeating patterns. Forecasts use charge timing, merchant context, and amount consistency—not unrelated personal email.</p>
-            <div className="privacy-note"><Icon name="shield" /><span><b>Your inbox stays yours.</b> Access is scoped to the Gmail receipts dataset you approve through Vana.</span></div>
+            <h3>{connectedSources ? "Your private spending map is taking shape." : "Three sources. One private money map."}</h3>
+            <p>{connectedSources ? `ChargeSignal analyzed ${recordCount} commerce records across ${connectedSources} connected source${connectedSources === 1 ? "" : "s"}. Add another source to improve the picture.` : "Connect any source to replace this preview with your own repeat-purchase and recurring-spend signals."}</p>
+            <div className="privacy-note"><Icon name="shield" /><span><b>Your data stays yours.</b> Access is limited to the commerce datasets you explicitly approve through Vana.</span></div>
           </aside>
         </div>
       </section>
 
       <section className="how shell">
-        <span className="kicker">How it works</span><h2>From receipts to foresight.</h2>
+        <span className="kicker">How it works</span><h2>From history to foresight.</h2>
         <div className="steps">
-          <article><span>01</span><div className="step-icon"><Icon name="shield" /></div><h3>Connect Gmail</h3><p>One secure flow requests only the receipt data needed. Vana handles the approval layer underneath.</p></article>
-          <article><span>02</span><div className="step-icon"><Icon name="receipt" /></div><h3>We read the context</h3><p>Merchant, amount, receipt language, and timing reveal recurring payment patterns.</p></article>
-          <article><span>03</span><div className="step-icon"><Icon name="calendar" /></div><h3>You get the signal</h3><p>See likely dates and amounts before the next charge reaches your card.</p></article>
+          <article><span>01</span><div className="step-icon"><Icon name="shield" /></div><h3>Choose a source</h3><p>Connect Amazon, Shop, or Uber through Vana’s user-controlled data flow.</p></article>
+          <article><span>02</span><div className="step-icon"><Icon name="receipt" /></div><h3>We find repetition</h3><p>Timing, merchants, items, and amounts reveal recurring spending patterns.</p></article>
+          <article><span>03</span><div className="step-icon"><Icon name="calendar" /></div><h3>You get the signal</h3><p>See likely dates and amounts before familiar spending returns.</p></article>
         </div>
       </section>
 
