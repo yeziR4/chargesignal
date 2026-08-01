@@ -31,8 +31,8 @@ export function getVanaController(source: AiSource) {
     network: network as "mainnet" | "moksha",
     appPrivateKey: appPrivateKey as `0x${string}`,
     app: {
-      id: "context-passport",
-      name: "Context Passport",
+      id: "threadprint",
+      name: "Threadprint",
       homepageUrl,
     },
     source,

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ContextPassportApp } from "./context-passport";
 
 export const metadata: Metadata = {
-  title: "Context Passport — Make your AI history portable",
+  title: "Threadprint — See the patterns in your AI conversations",
   description: "A private collaboration profile built from the ChatGPT and Claude history you approve through Vana.",
 };
 

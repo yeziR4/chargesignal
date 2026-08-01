@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.VANA_APP_URL || "https://chargesignal.example"),
-  title: "Context Passport",
+  metadataBase: new URL(process.env.VANA_APP_URL || "https://chargesignal-production-101d.up.railway.app"),
+  title: "Threadprint",
   description: "A private, portable collaboration profile built from user-approved AI history through Vana.",
   icons: { icon: "/icon.png", shortcut: "/icon.png" },
   openGraph: {
-    title: "Context Passport — Make your AI history portable",
+    title: "Threadprint — See the patterns in your AI conversations",
     description: "Turn user-approved ChatGPT and Claude history into a portable guide to how you think and work.",
   },
 };
