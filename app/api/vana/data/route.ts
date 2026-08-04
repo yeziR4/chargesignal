@@ -1,5 +1,5 @@
 import { analyzeContextData } from "@/lib/context-passport";
-import { getVanaController, parseAiSource } from "@/lib/vana";
+import { getReadAcknowledgement, getVanaController, parseAiSource } from "@/lib/vana";
 
 const cache = new Map<string, unknown>();
 export async function GET(request: Request) {
@@ -12,7 +12,21 @@ export async function GET(request: Request) {
   try {
     if (!cache.has(cacheKey)) {
       const approvedData = await getVanaController(source).readApprovedData({ requestId });
-      cache.set(cacheKey, analyzeContextData(source, approvedData));
+      const acknowledgement = getReadAcknowledgement(requestId);
+      if (acknowledgement?.status !== "acknowledged") {
+        const detail = acknowledgement?.error ?? "Vana returned no consumer acknowledgement.";
+        throw new Error(`The data was read, but Vana did not record it. Please retry. ${detail}`);
+      }
+      const result = analyzeContextData(source, approvedData);
+      console.info("[vana-read] approved data analyzed", {
+        requestId,
+        source,
+        paid: Boolean(approvedData.payment),
+        conversations: result.conversationCount,
+        userMessages: result.userMessageCount,
+        words: result.wordCount,
+      });
+      cache.set(cacheKey, result);
     }
     return Response.json(cache.get(cacheKey));
   } catch (error) {

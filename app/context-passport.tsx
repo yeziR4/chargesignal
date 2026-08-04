@@ -132,7 +132,7 @@ export function ContextPassportApp() {
 
   return <main>
     <nav className="nav shell">
-      <a className="brand" href="#top" aria-label="Threadprint home"><span className="brand-mark"><Icon name="spark" /></span>Threadprint</a>
+      <a className="brand" href="#top" aria-label="Context Passport home"><span className="brand-mark"><Icon name="spark" /></span>Context Passport</a>
       <div className="nav-meta"><span><Icon name="shield" />Private by design</span><span className="nav-badge">Powered by Vana</span></div>
     </nav>
 
@@ -149,7 +149,7 @@ export function ContextPassportApp() {
             type="button"
             onClick={() => document.getElementById("chatgpt-connect-button")?.click()}
           >
-            <Icon name="spark" />Reveal my Threadprint<Icon name="arrow" />
+            <Icon name="spark" />Build my passport<Icon name="arrow" />
           </button>
           <a className="text-button" href="#passport-title">Explore demo</a>
         </div>
@@ -164,14 +164,14 @@ export function ContextPassportApp() {
             <SourceConnector key={source} source={source} connected={Boolean(results[source])} onResult={saveResult} />,
           )}
         </div>
-        <small className="connect-footnote">You approve the datasets through Vana. Threadprint receives temporary access, analyzes them on the backend, and sends only the derived profile to this page.</small>
+        <small className="connect-footnote">You approve the datasets through Vana. Context Passport receives temporary access, analyzes them on the backend, and sends only the derived profile to this page.</small>
       </div>
     </section>
 
     <section className="dashboard shell" aria-labelledby="passport-title">
       <div className="section-heading">
-        <div><span className="kicker">Your collaboration manual</span><h2 id="passport-title">Your Threadprint</h2></div>
-        <span className={`mode-pill ${dataMode}`}><i></i>{dataMode === "demo" ? "Demo Threadprint" : `${connectedSources} source${connectedSources === 1 ? "" : "s"} live`}</span>
+        <div><span className="kicker">Your collaboration manual</span><h2 id="passport-title">Context Passport</h2></div>
+        <span className={`mode-pill ${dataMode}`}><i></i>{dataMode === "demo" ? "Demo passport" : `${connectedSources} source${connectedSources === 1 ? "" : "s"} live`}</span>
       </div>
 
       <div className="passport-hero">
@@ -231,6 +231,6 @@ export function ContextPassportApp() {
       </div>
     </section>
 
-    <footer className="shell"><a className="brand" href="#top"><span className="brand-mark"><Icon name="spark" /></span>Threadprint</a><p>Vana-secured · Your data, your control.</p><span>Patterns are informative, not psychological assessments.</span></footer>
+    <footer className="shell"><a className="brand" href="#top"><span className="brand-mark"><Icon name="spark" /></span>Context Passport</a><p>Vana-secured · Your data, your control.</p><span>Patterns are informative, not psychological assessments.</span></footer>
   </main>;
 }
