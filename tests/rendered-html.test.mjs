@@ -15,12 +15,14 @@ test("renders the Context Passport experience", async () => {
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /<title>Context Passport/);
-  assert.match(html, /Your AI history/);
+  assert.match(html, /Your history/);
   assert.match(html, /Context Passport/);
   assert.match(html, /Choose your history/);
   assert.match(html, /ChatGPT/);
+  assert.match(html, /YouTube/);
   assert.match(html, /Claude/);
   assert.match(html, /id="chatgpt-connect-button"/);
+  assert.match(html, /id="youtube-connect-button"/);
   assert.match(html, /<button[^>]*>.*Build my passport/s);
   assert.doesNotMatch(html, /codex-preview|SkeletonPreview|Your site is taking shape/);
 });

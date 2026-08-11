@@ -1,15 +1,16 @@
 # Context Passport
 
-Context Passport is a Vana-powered personal context app. It transforms user-approved ChatGPT and Claude history into a private, portable collaboration manual: recurring focus areas, working-style signals, and practical instructions for helping the user well.
+Context Passport is a Vana-powered personal context app. It transforms user-approved ChatGPT, Claude, and YouTube history into a private, portable collaboration manual: recurring focus areas, working-style signals, and practical instructions for helping the user well.
 
 ## Product flow
 
-1. The user starts with ChatGPT and approves access through Vana.
-2. The backend reads `chatgpt.conversations` and `chatgpt.memories`, then derives a Context Passport.
-3. The user can optionally add Claude for a broader view using `claude.conversations` and `claude.projects`.
+1. The user chooses ChatGPT, YouTube, or Claude and approves access through Vana.
+2. The backend reads only the approved source scopes and derives a source-aware Context Passport.
+3. YouTube uses `youtube.history`, `youtube.likes`, `youtube.subscriptions`, `youtube.playlists`, and `youtube.profile` to map interests and discovery patterns.
+4. The user can combine sources for a broader view.
 4. Only aggregate signals are returned to the browser. Raw conversations are not included in the client response.
 
-The app has a demo passport so visitors can understand the outcome before connecting data. Vana owns the authentication and data-approval flow; the app never receives ChatGPT or Claude passwords.
+The app has a demo passport so visitors can understand the outcome before connecting data. Vana owns the authentication and data-approval flow; the app never receives source passwords.
 
 ## Railway deployment
 

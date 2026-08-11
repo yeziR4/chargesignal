@@ -3,7 +3,7 @@ import { getVanaAppUrl, getVanaController, parseAiSource } from "@/lib/vana";
 export async function POST(request: Request) {
   try {
     const source = parseAiSource((await request.json())?.source);
-    if (!source) return Response.json({ error: "Choose ChatGPT or Claude." }, { status: 400 });
+    if (!source) return Response.json({ error: "Choose ChatGPT, Claude, or YouTube." }, { status: 400 });
     const accessRequest = await getVanaController(source).createAccessRequest({
       returnUrl: `${getVanaAppUrl()}/connect/return?source=${source}`,
     });

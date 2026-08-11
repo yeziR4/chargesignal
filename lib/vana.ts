@@ -6,6 +6,13 @@ import { privateKeyToAccount } from "viem/accounts";
 export const aiSources = {
   chatgpt: ["chatgpt.conversations", "chatgpt.memories"],
   claude: ["claude.conversations", "claude.projects"],
+  youtube: [
+    "youtube.history",
+    "youtube.likes",
+    "youtube.subscriptions",
+    "youtube.playlists",
+    "youtube.profile",
+  ],
 } as const;
 
 export type AiSource = keyof typeof aiSources;

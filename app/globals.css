@@ -72,7 +72,7 @@ svg { width: 1.2em; height: 1.2em; }
 .source-row { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 12px; position: relative; padding: 12px; border: 3px solid var(--ink); border-radius: 16px; background: #fff0d0; box-shadow: 4px 4px 0 rgba(53,53,53,.16); }
 .source-row.connected { background: #cce4c9; }
 .source-mark { width: 44px; height: 44px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 13px; color: #fff; font: 900 22px "Arial Black", sans-serif; }
-.source-mark.chatgpt { background: #19a37f; }.source-mark.claude { background: #c56b46; }
+.source-mark.chatgpt { background: #19a37f; }.source-mark.youtube { background: #e5483f; font-size: 15px; }.source-mark.claude { background: #c56b46; }
 .source-copy { display: flex; flex-direction: column; gap: 3px; }.source-copy b { font-size: 14px; }.source-copy small { color: var(--muted); font-size: 10px; }
 .source-name { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
 .source-name i { padding: 3px 6px; border: 1px solid var(--ink); border-radius: 999px; color: var(--muted); background: var(--cream); font-size: 8px; font-style: normal; font-weight: 900; text-transform: uppercase; letter-spacing: .4px; }

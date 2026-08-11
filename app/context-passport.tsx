@@ -29,6 +29,7 @@ function Icon({ name }: { name: "spark" | "shield" | "brain" | "message" | "laye
 const sourceDetails: Record<AiSource, { name: string; mark: string; description: string; note: string }> = {
   chatgpt: { name: "ChatGPT", mark: "◎", description: "Conversations + memories", note: "Best place to start" },
   claude: { name: "Claude", mark: "C", description: "Conversations + projects", note: "Optional second perspective" },
+  youtube: { name: "YouTube", mark: "YT", description: "Watch history + interests", note: "Taste & discovery" },
 };
 
 function SourceConnector({ source, connected, onResult }: {
@@ -56,7 +57,7 @@ function SourceConnector({ source, connected, onResult }: {
   const label = connected || connect.state.type === "done" ? "Added"
     : connect.state.type === "error" ? "Try again"
       : busy ? "Waiting…"
-        : source === "chatgpt" ? "Start with ChatGPT" : "Add Claude";
+        : source === "chatgpt" ? "Start with ChatGPT" : `Add ${detail.name}`;
 
   return <div className={`source-row ${connected ? "connected" : ""}`}>
     <span className={`source-mark ${source}`}>{detail.mark}</span>
@@ -122,12 +123,19 @@ export function ContextPassportApp() {
   const passport = useMemo(() => mergePassports(results), [results]);
   const connectedSources = Object.keys(results).length;
   const dataMode = connectedSources ? "vana" : "demo";
+  const hasYoutube = Boolean(results.youtube);
+  const youtubeOnly = connectedSources === 1 && Boolean(results.youtube);
   const saveResult = (result: ContextPassportResult) => setResults((current) => ({ ...current, [result.source]: result }));
-  const signals = [
+  const signals = youtubeOnly ? [
+    ["Exploration depth", passport.behaviorSignals.depth],
+    ["Active interest", passport.behaviorSignals.actionOrientation],
+    ["Channel variety", passport.behaviorSignals.curiosity],
+    ["Curation", passport.behaviorSignals.iteration],
+  ] as const : [
     ["Context depth", passport.behaviorSignals.depth],
     ["Action bias", passport.behaviorSignals.actionOrientation],
     ["Curiosity", passport.behaviorSignals.curiosity],
-    ["Iteration", passport.behaviorSignals.iteration],
+    [hasYoutube ? "Curation & iteration" : "Iteration", passport.behaviorSignals.iteration],
   ] as const;
 
   return <main>
@@ -140,27 +148,27 @@ export function ContextPassportApp() {
       <div className="lamp lamp-left" aria-hidden="true"><i></i></div>
       <div className="lamp lamp-right" aria-hidden="true"><i></i></div>
       <div className="hero-copy">
-        <div className="eyebrow"><span></span> Your portable AI context</div>
-        <h1>Your AI history<br /><em>already knows you.</em></h1>
-        <p>Turn the conversations you choose from ChatGPT and Claude into a private, portable guide to your goals, working style, and best ways to collaborate.</p>
+        <div className="eyebrow"><span></span> Your portable digital context</div>
+        <h1>Your history<br /><em>already knows you.</em></h1>
+        <p>Turn the history you choose from ChatGPT, Claude, and YouTube into a private, portable guide to your interests, goals, and best ways to collaborate.</p>
         <div className="hero-actions">
           <button
             className="primary"
             type="button"
-            onClick={() => document.getElementById("chatgpt-connect-button")?.click()}
+            onClick={() => document.getElementById("connect")?.scrollIntoView({ behavior: "smooth", block: "center" })}
           >
             <Icon name="spark" />Build my passport<Icon name="arrow" />
           </button>
           <a className="text-button" href="#passport-title">Explore demo</a>
         </div>
-        <div className="trust-row"><span><Icon name="check" />One Vana approval flow</span><span><Icon name="check" />No raw chats in your browser</span><span><Icon name="check" />Revoke anytime</span></div>
+        <div className="trust-row"><span><Icon name="check" />One Vana approval flow</span><span><Icon name="check" />No raw history in your browser</span><span><Icon name="check" />Revoke anytime</span></div>
       </div>
 
-      <div className="signal-card source-card" id="connect" aria-label="Connect AI history">
-        <div className="signal-top"><span>Your context sources</span><span className="live-dot">{connectedSources}/2 live</span></div>
-        <div className="connect-heading"><span className="receipt-ribbon"><Icon name="shield" /> Vana-secured</span><h2>Choose your history</h2><p>Start with ChatGPT. Claude adds another side of how you think.</p></div>
+      <div className="signal-card source-card" id="connect" aria-label="Connect your history">
+        <div className="signal-top"><span>Your context sources</span><span className="live-dot">{connectedSources}/3 live</span></div>
+        <div className="connect-heading"><span className="receipt-ribbon"><Icon name="shield" /> Vana-secured</span><h2>Choose your history</h2><p>Use AI conversations, YouTube interests, or combine them for a richer passport.</p></div>
         <div className="source-list">
-          {(["chatgpt", "claude"] as AiSource[]).map((source) =>
+          {(["chatgpt", "youtube", "claude"] as AiSource[]).map((source) =>
             <SourceConnector key={source} source={source} connected={Boolean(results[source])} onResult={saveResult} />,
           )}
         </div>
@@ -178,9 +186,9 @@ export function ContextPassportApp() {
         <div>
           <span className="passport-label">Your context archetype</span>
           <h3>{passport.archetype}</h3>
-          <p>{connectedSources ? "Built from the AI history you approved." : "A preview of the profile your history can create."}</p>
+          <p>{connectedSources ? "Built from the history you approved through Vana." : "A preview of the profile your history can create."}</p>
           <div className="source-badges">
-            {(connectedSources ? Object.keys(results) as AiSource[] : ["chatgpt", "claude"]).map((source) =>
+            {(connectedSources ? Object.keys(results) as AiSource[] : ["chatgpt", "youtube", "claude"]).map((source) =>
               <span key={source}>{sourceDetails[source].name}{!connectedSources ? " preview" : ""}</span>,
             )}
           </div>
@@ -189,8 +197,8 @@ export function ContextPassportApp() {
       </div>
 
       <div className="stats-grid">
-        <article className="stat"><div className="stat-icon mint"><Icon name="message" /></div><div><span>Conversations</span><strong>{compactNumber(passport.conversationCount)}</strong><small>threads understood</small></div></article>
-        <article className="stat"><div className="stat-icon peach"><Icon name="brain" /></div><div><span>Your messages</span><strong>{compactNumber(passport.userMessageCount)}</strong><small>signals analyzed</small></div></article>
+        <article className="stat"><div className="stat-icon mint"><Icon name="message" /></div><div><span>{youtubeOnly ? "Videos mapped" : hasYoutube ? "History items" : "Conversations"}</span><strong>{compactNumber(passport.conversationCount)}</strong><small>{youtubeOnly ? "watch signals understood" : hasYoutube ? "threads & videos understood" : "threads understood"}</small></div></article>
+        <article className="stat"><div className="stat-icon peach"><Icon name="brain" /></div><div><span>{youtubeOnly ? "Taste signals" : hasYoutube ? "Preference signals" : "Your messages"}</span><strong>{compactNumber(passport.userMessageCount)}</strong><small>{youtubeOnly ? "likes, follows & playlists" : hasYoutube ? "messages, likes & follows" : "signals analyzed"}</small></div></article>
         <article className="stat"><div className="stat-icon yellow"><Icon name="layers" /></div><div><span>Context volume</span><strong>{compactNumber(passport.wordCount)}</strong><small>words mapped</small></div></article>
       </div>
 
@@ -212,7 +220,7 @@ export function ContextPassportApp() {
           <div className="behavior-list">
             {signals.map(([label, value]) => <div key={label}><span><b>{label}</b><em>{value}</em></span><i><b style={{ width: `${value}%` }} /></i></div>)}
           </div>
-          <small>Signals describe patterns in how you use AI—not fixed personality traits.</small>
+          <small>Signals describe patterns in the history you approved—not fixed personality traits.</small>
         </aside>
       </div>
 
@@ -225,7 +233,7 @@ export function ContextPassportApp() {
     <section className="how shell">
       <span className="kicker">How it works</span><h2>History becomes useful context.</h2>
       <div className="steps">
-        <article><span>01</span><div className="step-icon"><Icon name="shield" /></div><h3>Approve with Vana</h3><p>Choose ChatGPT or Claude data through one user-controlled Vana flow.</p></article>
+        <article><span>01</span><div className="step-icon"><Icon name="shield" /></div><h3>Approve with Vana</h3><p>Choose ChatGPT, Claude, or YouTube data through a user-controlled Vana flow.</p></article>
         <article><span>02</span><div className="step-icon"><Icon name="brain" /></div><h3>Map your patterns</h3><p>Private backend analysis finds recurring goals, interests, and collaboration preferences.</p></article>
         <article><span>03</span><div className="step-icon"><Icon name="layers" /></div><h3>Carry context forward</h3><p>Get a clean personal guide you can use with any AI or human collaborator.</p></article>
       </div>

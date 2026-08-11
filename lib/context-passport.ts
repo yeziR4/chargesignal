@@ -41,6 +41,19 @@ const THEMES: Array<{ name: string; pattern: RegExp }> = [
   { name: "Community & relationships", pattern: /\b(community|friend|relationship|people|social|audience|network|discord)\b/gi },
 ];
 
+const YOUTUBE_THEMES: Array<{ name: string; pattern: RegExp }> = [
+  { name: "Technology & AI", pattern: /\b(ai|artificial intelligence|agent|coding|code|software|tech|computer|programming|developer|javascript|python|robot|gadget)\b/gi },
+  { name: "Learning & ideas", pattern: /\b(learn|lesson|tutorial|explained|science|history|documentary|research|study|course|how to|education|lecture)\b/gi },
+  { name: "Business & money", pattern: /\b(business|startup|money|finance|invest|market|entrepreneur|sales|career|economy|crypto|trading)\b/gi },
+  { name: "Creative culture", pattern: /\b(design|art|film|movie|animation|photography|writing|creative|fashion|architecture|story)\b/gi },
+  { name: "Music", pattern: /\b(music|song|album|mix|remix|concert|lyrics|official audio|music video|playlist)\b/gi },
+  { name: "Gaming & entertainment", pattern: /\b(game|gaming|gameplay|stream|funny|comedy|trailer|reaction|anime|esports)\b/gi },
+  { name: "Health & performance", pattern: /\b(health|fitness|workout|sleep|nutrition|training|sport|performance|wellness|gym)\b/gi },
+  { name: "Food & travel", pattern: /\b(food|recipe|cooking|restaurant|travel|trip|country|city|hotel|flight|adventure)\b/gi },
+  { name: "News & society", pattern: /\b(news|politics|society|culture|world|current affairs|interview|debate|policy)\b/gi },
+  { name: "Personal growth", pattern: /\b(goal|habit|improve|productivity|motivation|confidence|mindset|life|future|discipline)\b/gi },
+];
+
 function collectRecords(value: unknown) {
   const records: Record<string, unknown>[] = [];
   const visit = (node: unknown) => {
@@ -89,8 +102,93 @@ function archetypeFor(topTheme: string, action: number, curiosity: number, itera
   return "Adaptive Explorer";
 }
 
+function focusAreasFor(text: string, themes = THEMES) {
+  const themeCounts = themes
+    .map((theme) => ({ name: theme.name, count: countMatches(text, theme.pattern) }))
+    .sort((a, b) => b.count - a.count);
+  const highestThemeCount = themeCounts[0]?.count || 1;
+  return themeCounts
+    .filter((theme) => theme.count > 0)
+    .slice(0, 5)
+    .map((theme) => ({ name: theme.name, score: clamp((theme.count / highestThemeCount) * 100) }));
+}
+
+function youtubeArchetype(topTheme: string, curiosity: number, curation: number) {
+  if (["Technology & AI", "Learning & ideas"].includes(topTheme)) return "Curious Synthesizer";
+  if (["Creative culture", "Music"].includes(topTheme)) return "Creative Explorer";
+  if (topTheme === "Business & money") return "Strategic Learner";
+  if (topTheme === "Health & performance") return "Performance Seeker";
+  if (curiosity >= 70) return "Wide-Angle Explorer";
+  if (curation >= 65) return "Intentional Curator";
+  return "Culture Explorer";
+}
+
+function analyzeYoutubeData(records: Record<string, unknown>[]): ContextPassportResult {
+  const history = records.filter((record) => typeof record.videoUrl === "string" && "watchedAtText" in record);
+  const likedVideos = records.filter((record) => typeof record.videoUrl === "string" && "durationText" in record);
+  const subscriptions = records.filter((record) =>
+    typeof record.channelUrl === "string" && typeof record.channelTitle === "string" && "isVerified" in record,
+  );
+  const playlists = records.filter((record) => typeof record.playlistId === "string" && typeof record.url === "string");
+  const videos = records.filter((record) => typeof record.videoUrl === "string");
+  const uniqueVideos = new Map(videos.map((record) => [String(record.videoUrl), record]));
+  const textRecords = [...uniqueVideos.values(), ...subscriptions, ...playlists];
+  const analysisText = textRecords.map((record) => [
+    record.videoTitle,
+    record.channelTitle,
+    record.title,
+    record.description,
+  ].filter((value) => typeof value === "string").join(" ")).join("\n").slice(0, 2_000_000);
+  const words = analysisText.match(/\b[\p{L}\p{N}'-]+\b/gu) ?? [];
+  const focusAreas = focusAreasFor(analysisText, YOUTUBE_THEMES);
+  if (!focusAreas.length) focusAreas.push({ name: "General discovery", score: 100 });
+
+  const channelNames = textRecords
+    .map((record) => record.channelTitle)
+    .filter((value): value is string => typeof value === "string" && Boolean(value.trim()));
+  const uniqueChannels = new Set(channelNames.map((value) => value.toLowerCase())).size;
+  const preferenceSignals = likedVideos.length + subscriptions.length + playlists.length;
+  const viewedSignals = Math.max(history.length + likedVideos.length, 1);
+  const depth = clamp(history.length * 1.35 + playlists.length * 7 + subscriptions.length * .35);
+  const actionOrientation = clamp((likedVideos.length + playlists.length * 2) / viewedSignals * 100);
+  const curiosity = clamp(uniqueChannels / viewedSignals * 100);
+  const curation = clamp(preferenceSignals * 2.4);
+  const contextItemCount = history.length + likedVideos.length + subscriptions.length + playlists.length;
+  const signalStrength = clamp(
+    Math.min(history.length, 50) * .9 +
+    Math.min(likedVideos.length, 100) * .35 +
+    Math.min(subscriptions.length, 100) * .2 +
+    Math.min(playlists.length, 25) * 1.2 +
+    Math.min(words.length, 10_000) * .002,
+  );
+  const topTheme = focusAreas[0]?.name ?? "General discovery";
+
+  return {
+    source: "youtube",
+    conversationCount: history.length || uniqueVideos.size,
+    userMessageCount: preferenceSignals,
+    contextItemCount,
+    wordCount: words.length,
+    signalStrength,
+    archetype: youtubeArchetype(topTheme, curiosity, curation),
+    focusAreas,
+    collaborationGuide: [
+      `Connect new ideas to my interest in ${topTheme.toLowerCase()}.`,
+      curiosity >= 65
+        ? "Offer a few different perspectives before narrowing to one recommendation."
+        : "Start with a focused recommendation, then show closely related alternatives.",
+      actionOrientation >= 50
+        ? "Use practical demonstrations, examples, and things I can try immediately."
+        : "Explain the core idea clearly before asking me to act on it.",
+      "Distinguish enduring interests from videos I may have watched only once.",
+    ],
+    behaviorSignals: { depth, actionOrientation, curiosity, iteration: curation },
+  };
+}
+
 export function analyzeContextData(source: AiSource, value: unknown): ContextPassportResult {
   const records = collectRecords(value);
+  if (source === "youtube") return analyzeYoutubeData(records);
   const conversations = conversationsFrom(records);
   const userMessages = conversations.flatMap((conversation) =>
     conversation.messages.filter((message) => ["user", "human"].includes(message.role)),
@@ -109,13 +207,7 @@ export function analyzeContextData(source: AiSource, value: unknown): ContextPas
   const questionMessages = userMessages.filter((message) => message.content.includes("?")).length;
   const actionMentions = countMatches(analysisText, /\b(build|create|make|implement|fix|ship|deploy|write|design|plan|launch|start)\b/gi);
   const iterationMentions = countMatches(analysisText, /\b(again|revise|update|change|improve|iterate|retry|another|version|next)\b/gi);
-  const themeCounts = THEMES.map((theme) => ({ name: theme.name, count: countMatches(analysisText, theme.pattern) }))
-    .sort((a, b) => b.count - a.count);
-  const highestThemeCount = themeCounts[0]?.count || 1;
-  const focusAreas = themeCounts
-    .filter((theme) => theme.count > 0)
-    .slice(0, 5)
-    .map((theme) => ({ name: theme.name, score: clamp((theme.count / highestThemeCount) * 100) }));
+  const focusAreas = focusAreasFor(analysisText);
   const depth = clamp(averageWords * 1.35);
   const curiosity = clamp(userMessages.length ? (questionMessages / userMessages.length) * 140 : 0);
   const actionOrientation = clamp(userMessages.length ? (actionMentions / userMessages.length) * 115 : 0);

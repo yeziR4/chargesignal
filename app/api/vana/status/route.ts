@@ -5,7 +5,7 @@ export async function GET(request: Request) {
   const requestId = url.searchParams.get("requestId");
   const source = parseAiSource(url.searchParams.get("source"));
   if (!requestId) return Response.json({ error: "Missing requestId" }, { status: 400 });
-  if (!source) return Response.json({ error: "Choose ChatGPT or Claude." }, { status: 400 });
+  if (!source) return Response.json({ error: "Choose ChatGPT, Claude, or YouTube." }, { status: 400 });
   try {
     return Response.json(await getVanaController(source).getAccessRequestStatus(requestId));
   } catch (error) {
